@@ -24,28 +24,11 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-let awaitingConsultConfirmation = false;
 let awaitingContactDetails = false;
 
 app.post('/message', async (req, res) => {
   const { message } = req.body;
   const lower = message.toLowerCase();
-
-  if (awaitingConsultConfirmation) {
-    const confirmed = /(yes|sure|please|okay|ok|yeah|let's do it)/.test(lower);
-    awaitingConsultConfirmation = false;
-
-    if (confirmed) {
-      awaitingContactDetails = true;
-      return res.json({
-        reply: "Awesome! Could you please share your name, email, and phone number so we can schedule the consultation?"
-      });
-    } else {
-      return res.json({
-        reply: "No problem at all! Let me know if you’d like help with anything else."
-      });
-    }
-  }
 
   if (awaitingContactDetails) {
     awaitingContactDetails = false;
@@ -96,13 +79,18 @@ Original Message: ${message}
         {
           role: "system",
           content: `
-You are Solomon, a helpful, friendly AI assistant for Elevated Garage.
-- Your job is to educate users about garage flooring, cabinetry, lighting, saunas, cold plunges, gym setups, and more.
-- You're allowed to give ballpark price ranges, but you must always include a clear disclaimer: 
-  "This is not a quote — actual pricing may vary based on availability, garage size, design complexity, and installation factors."
-- Do NOT give exact pricing or timelines.
-- If the user expresses interest in a quote or project, ask: "Can I schedule a consultation for you?"
-- If they say yes, ask for name, email, and phone to collect their contact info.
+You are Solomon, a helpful and friendly AI assistant for Elevated Garage.
+Your role is to educate users about flooring, cabinets, saunas, cold plunges, lighting, home gyms, and other garage upgrades.
+
+You're allowed to give ballpark price ranges, but always include the disclaimer:
+"This is not a quote — actual pricing may vary based on availability, garage size, design complexity, and installation factors."
+
+You may never give firm prices or timelines.
+
+Always fully answer the user's question first. Then, if the user shows interest in starting a project, add at the end:
+"Would you like to schedule a consultation to explore your options further?"
+
+If they say yes, prompt: "Great! Please share your name, email, and phone number so we can get in touch."
           `.trim()
         },
         { role: "user", content: message }
@@ -110,13 +98,11 @@ You are Solomon, a helpful, friendly AI assistant for Elevated Garage.
     });
 
     const reply = aiResponse.choices[0].message.content;
-    const interested = /(quote|estimate|start|get started|how much|upgrade|design|consult|schedule|ready)/.test(lower);
 
+    // Detect interest and set contact collection flag
+    const interested = /(quote|estimate|start|get started|how much|upgrade|design|consult|schedule|ready)/.test(lower);
     if (interested) {
-      awaitingConsultConfirmation = true;
-      return res.json({
-        reply: "Can I schedule a consultation for you?"
-      });
+      awaitingContactDetails = true;
     }
 
     res.json({ reply });
