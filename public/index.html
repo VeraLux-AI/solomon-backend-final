@@ -10,42 +10,14 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    #solomon-button {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      background-color: #B91B21;
-      border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 32px;
-      cursor: pointer;
-      z-index: 9999;
-    }
-
-    #solomon-button:hover {
-      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-    }
-
     #solomon-chat {
-      position: fixed;
-      bottom: 90px;
-      right: 20px;
-      width: 380px;
-      height: 520px;
+      width: 100%;
+      height: 100vh;
       background: #ffffff;
-      border: 1px solid #ccc;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-      display: none;
+      display: flex;
       flex-direction: column;
-      overflow: hidden;
-      z-index: 9998;
+      border-radius: 0;
+      box-shadow: none;
     }
 
     #chat-header {
@@ -113,8 +85,6 @@
 </head>
 <body>
 
-<div id="solomon-button">?</div>
-
 <div id="solomon-chat">
   <div id="chat-header">Chat with Solomon</div>
   <div id="chat-messages"></div>
@@ -126,21 +96,11 @@
 </div>
 
 <script>
-  const button = document.getElementById('solomon-button');
-  const chatbox = document.getElementById('solomon-chat');
   const messages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing');
-  let hasGreeted = false;
 
-  button.onclick = () => {
-    const isOpen = chatbox.style.display === 'flex';
-    chatbox.style.display = isOpen ? 'none' : 'flex';
-
-    if (!isOpen && !hasGreeted) {
-      appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
-      hasGreeted = true;
-    }
-  };
+  // Auto-greet on load
+  appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
 
   async function sendMessage() {
     const input = document.getElementById("userInput");
