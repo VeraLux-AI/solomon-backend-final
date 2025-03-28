@@ -15,7 +15,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Titan Mail SMTP setup with logging
+// Titan Mail SMTP setup
 const transporter = nodemailer.createTransport({
   host: 'smtp.titan.email',
   port: 465,
@@ -26,9 +26,26 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Parse contact details from a string message
+function extractLeadDetails(message) {
+  const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
+  const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+  const nameMatch = message
+    .replace(emailMatch?.[0] || "", "")
+    .replace(phoneMatch?.[0] || "", "")
+    .replace(/[,\s]+/g, " ")
+    .trim();
+
+  return {
+    name: nameMatch || "",
+    email: emailMatch?.[0] || "",
+    phone: phoneMatch?.[0] || ""
+  };
+}
+
 // Chat and lead capture logic
 app.post('/message', async (req, res) => {
-  const { name, email, phone, message } = req.body;
+  const { message } = req.body;
 
   try {
     const chatCompletion = await openai.chat.completions.create({
@@ -49,7 +66,13 @@ Once contact details are collected, thank them and let them know a team member w
     });
 
     const reply = chatCompletion?.choices?.[0]?.message?.content || "I'm here to help whenever you're ready.";
-    console.log(`Message from ${name || 'Visitor'}: "${message}"`);
+    console.log(`Message from Visitor: "${message}"`);
+
+    const { name, email, phone } = extractLeadDetails(message);
+    console.log("🔍 Parsed Contact Details:");
+    console.log("   Name:", name);
+    console.log("   Email:", email);
+    console.log("   Phone:", phone);
 
     if (name && email && phone) {
       const mailOptions = {
@@ -66,7 +89,7 @@ Message: ${message}
         `.trim()
       };
 
-      console.log("Attempting to send email via Titan SMTP...");
+      console.log("📤 Attempting to send email via Titan SMTP...");
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
           console.error("❌ Email failed to send:", error);
