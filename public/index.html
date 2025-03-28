@@ -9,9 +9,9 @@
       --solomon-red: #B91B21;
       --solomon-orange: #EB6000;
       --solomon-bubble-user: #EB6000;
-      --solomon-bubble-bot: #f2f2f2;
-      --solomon-bg: rgba(255, 255, 255, 0.6);
-      --solomon-blur: blur(12px);
+      --solomon-bubble-bot: rgba(255, 255, 255, 0.65);
+      --solomon-glass-bg: rgba(255, 255, 255, 0.25);
+      --solomon-border: rgba(255, 255, 255, 0.2);
     }
 
     body {
@@ -23,13 +23,14 @@
     #solomon-chat {
       width: 100%;
       height: 100vh;
-      background: var(--solomon-bg);
-      backdrop-filter: var(--solomon-blur);
-      border-radius: 0;
+      background: var(--solomon-glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--solomon-border);
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
-      box-shadow: none;
-      border: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
 
     #chat-header {
@@ -37,33 +38,40 @@
       color: white;
       padding: 18px;
       font-size: 17px;
+      font-weight: bold;
+      text-align: center;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.2);
     }
 
     #chat-messages {
       flex: 1;
-      padding: 18px;
+      padding: 20px;
       overflow-y: auto;
       font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
       background: transparent;
     }
 
     .message {
-      max-width: 80%;
-      margin-bottom: 16px;
-      padding: 12px 14px;
+      max-width: 85%;
+      padding: 12px 16px;
       border-radius: 18px;
       line-height: 1.5;
       position: relative;
-      display: inline-block;
       opacity: 0;
       transition: opacity 0.3s ease;
+      word-wrap: break-word;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
 
     .user {
       background: var(--solomon-bubble-user);
       color: white;
       align-self: flex-end;
-      margin-left: auto;
       border-bottom-right-radius: 4px;
     }
 
@@ -72,21 +80,22 @@
       color: #222;
       align-self: flex-start;
       border-bottom-left-radius: 4px;
+      backdrop-filter: blur(4px);
     }
 
     #typing {
       font-style: italic;
-      color: #aaa;
+      color: #999;
       display: none;
-      padding-left: 8px;
+      padding-left: 12px;
       font-size: 13px;
     }
 
     #chat-input {
       display: flex;
       padding: 14px;
-      border-top: 1px solid rgba(255,255,255,0.3);
-      background: rgba(255,255,255,0.4);
+      border-top: 1px solid var(--solomon-border);
+      background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(8px);
     }
 
@@ -97,16 +106,23 @@
       border: 1px solid #ccc;
       border-radius: 8px;
       outline: none;
+      background-color: rgba(255,255,255,0.7);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
 
     #chat-input button {
       background: var(--solomon-orange);
       color: white;
       border: none;
-      padding: 10px 14px;
+      padding: 10px 16px;
       margin-left: 10px;
       border-radius: 8px;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    #chat-input button:hover {
+      background: #d24d00;
     }
   </style>
 </head>
@@ -126,7 +142,6 @@
   const messages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing');
 
-  // Auto-greet
   appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
 
   async function sendMessage() {
@@ -142,12 +157,7 @@
       const res = await fetch("/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "",
-          email: "",
-          phone: "",
-          message: message
-        })
+        body: JSON.stringify({ message })
       });
 
       const data = await res.json();
