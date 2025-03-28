@@ -23,7 +23,7 @@ app.post('/message', async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are Solomon, a helpful garage design assistant for Elevated Garage. Be friendly, professional, and avoid giving DIY installation advice.",
+          content: "You are Solomon, a helpful garage design assistant for Elevated Garage. Be friendly, professional, and avoid giving DIY installation advice. Do not confirm pricing, only rough estimates. Do not give solid lead times, only give time ranges",
         },
         { role: "user", content: message },
       ],
