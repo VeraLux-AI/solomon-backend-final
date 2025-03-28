@@ -25,17 +25,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Memory store for simple lead capture (could be expanded to per-session)
 const contactPath = path.join(__dirname, 'lead-contact.json');
 
-// Store contact info (name, email, phone)
 app.post('/store-contact', (req, res) => {
   const { name, email, phone } = req.body;
   fs.writeFileSync(contactPath, JSON.stringify({ name, email, phone }));
   res.sendStatus(200);
 });
 
-// Handle optional garage form submission
 app.post('/lead-details', (req, res) => {
   const { size, priority, timeline } = req.body;
 
@@ -68,13 +65,12 @@ Timeline: ${timeline || 'N/A'}
       console.error("❌ Email failed:", error);
       res.status(500).send("Error sending lead");
     } else {
-      console.log("✅ Lead email sent:", info.response);
+      console.log("✅ Garage lead email sent:", info.response);
       res.sendStatus(200);
     }
   });
 });
 
-// Handle chat messages via OpenAI
 app.post('/message', async (req, res) => {
   const { message } = req.body;
 
@@ -85,17 +81,24 @@ app.post('/message', async (req, res) => {
         {
           role: "system",
           content: `
-You are Solomon, an expert AI assistant for Elevated Garage. Your job is to help homeowners design their dream garages by answering questions, educating them, and capturing interest in services like flooring, cabinets, gym equipment, lighting, and saunas.
-
-NEVER provide specific prices or timelines — always clarify they vary by project scope and product availability. If someone wants to proceed with a consultation, kindly ask for their name, email, and phone number. Respond conversationally and be helpful.
-`.trim()
+You are Solomon, an AI garage design assistant for Elevated Garage.
+- Help users explore garage flooring, cabinetry, lighting, saunas, cold plunges, home gyms, and more.
+- Never provide specific prices or timelines — instead, offer to set up a consultation.
+- If a user expresses serious interest in a remodel or asks for a quote, ask for their name/email/phone and trigger a custom garage form.
+Respond warmly and professionally.
+          `.trim()
         },
         { role: "user", content: message }
       ]
     });
 
     const reply = chatResponse.choices[0].message.content;
-    res.json({ reply });
+
+    // Check if form should be shown based on keywords
+    const lowerMsg = message.toLowerCase();
+    const showForm = /quote|consult|schedule|estimate|start|get started|i'm ready|how much|upgrade|design/.test(lowerMsg);
+
+    res.json({ reply, showForm });
 
   } catch (err) {
     console.error("OpenAI Error:", err.message);
@@ -103,7 +106,6 @@ NEVER provide specific prices or timelines — always clarify they vary by proje
   }
 });
 
-// Serve chat UI
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
