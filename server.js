@@ -24,26 +24,20 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-let awaitingContactDetails = false;
-
 app.post('/message', async (req, res) => {
   const { message } = req.body;
   const lower = message.toLowerCase();
 
-  if (awaitingContactDetails) {
-    awaitingContactDetails = false;
+  // Check if message contains all lead info (name, email, phone)
+  const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
+  const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+  const nameLikely = /([A-Z][a-z]+\s[A-Z][a-z]+)/.test(message);
 
-    const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
-    const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-    const nameMatch = message
-      .replace(emailMatch?.[0] || "", "")
-      .replace(phoneMatch?.[0] || "", "")
-      .replace(/[,\s]+/g, " ")
-      .trim();
-
-    const name = nameMatch || "N/A";
-    const email = emailMatch?.[0] || "N/A";
-    const phone = phoneMatch?.[0] || "N/A";
+  if (emailMatch && phoneMatch && nameLikely) {
+    const nameMatch = message.match(/([A-Z][a-z]+\s[A-Z][a-z]+)/);
+    const name = nameMatch ? nameMatch[0] : "N/A";
+    const email = emailMatch[0];
+    const phone = phoneMatch[0];
 
     const mailOptions = {
       from: process.env.LEAD_EMAIL_USER,
@@ -79,18 +73,19 @@ Original Message: ${message}
         {
           role: "system",
           content: `
-You are Solomon, a helpful and friendly AI assistant for Elevated Garage.
-Your role is to educate users about flooring, cabinets, saunas, cold plunges, lighting, home gyms, and other garage upgrades.
+You are Solomon, a friendly and professional AI assistant for Elevated Garage.
 
-You're allowed to give ballpark price ranges, but always include the disclaimer:
+Your job is to help homeowners explore garage solutions: flooring, cabinetry, saunas, cold plunges, home gyms, lighting, and storage.
+
+✅ You're allowed to give ballpark ranges, but always include the disclaimer:
 "This is not a quote — actual pricing may vary based on availability, garage size, design complexity, and installation factors."
 
-You may never give firm prices or timelines.
-
-Always fully answer the user's question first. Then, if the user shows interest in starting a project, add at the end:
+🚫 Never give exact pricing or timelines.
+✅ Always answer user questions fully.
+✅ If user shows interest (e.g. asks for quote, cost, or next steps), ask:
 "Would you like to schedule a consultation to explore your options further?"
 
-If they say yes, prompt: "Great! Please share your name, email, and phone number so we can get in touch."
+Only collect lead info when the user replies with their name, email, AND phone — all in one message. Otherwise, keep the conversation going.
           `.trim()
         },
         { role: "user", content: message }
@@ -98,12 +93,6 @@ If they say yes, prompt: "Great! Please share your name, email, and phone number
     });
 
     const reply = aiResponse.choices[0].message.content;
-
-    // Detect interest and set contact collection flag
-    const interested = /(quote|estimate|start|get started|how much|upgrade|design|consult|schedule|ready)/.test(lower);
-    if (interested) {
-      awaitingContactDetails = true;
-    }
 
     res.json({ reply });
 
