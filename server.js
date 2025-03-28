@@ -15,7 +15,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Titan Mail SMTP setup
+// Titan Mail SMTP setup with logging
 const transporter = nodemailer.createTransport({
   host: 'smtp.titan.email',
   port: 465,
@@ -66,11 +66,12 @@ Message: ${message}
         `.trim()
       };
 
+      console.log("Attempting to send email via Titan SMTP...");
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-          console.error("Email error:", error);
+          console.error("❌ Email failed to send:", error);
         } else {
-          console.log("Lead email sent:", info.response);
+          console.log("✅ Lead email sent successfully:", info.response);
         }
       });
     }
