@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Solomon Chat</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #solomon-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background-color: #B91B21;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      cursor: pointer;
+      z-index: 9999;
+      transition: box-shadow 0.3s ease;
+    }
+
+    #solomon-button:hover {
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+
+    #solomon-chat {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 380px;
+      height: 520px;
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9998;
+    }
+
+    #chat-header {
+      background-color: #B91B21;
+      color: white;
+      padding: 16px;
+      font-size: 16px;
+    }
+
+    #chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      font-size: 14px;
+      background: #f9f9f9;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .user {
+      font-weight: bold;
+      color: #EB6000;
+    }
+
+    .bot {
+      color: #333;
+    }
+
+    #typing {
+      font-style: italic;
+      color: #aaa;
+      display: none;
+      padding-left: 8px;
+    }
+
+    #chat-input {
+      display: none;
+      padding: 12px;
+      border-top: 1px solid #eee;
+      background: white;
+    }
+
+    #chat-input input {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+    }
+
+    #chat-input button {
+      background: #EB6000;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      margin-left: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="solomon-button">?</div>
+
+<div id="solomon-chat">
+  <div id="chat-header">Chat with Solomon</div>
+  <div id="chat-messages"></div>
+  <div id="typing">Solomon is typing...</div>
+  <div id="chat-input">
+    <input type="text" id="userInput" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+  const button = document.getElementById('solomon-button');
+  const chatbox = document.getElementById('solomon-chat');
+  const messages = document.getElementById('chat-messages');
+  const typingIndicator = document.getElementById('typing');
+
+  let hasGreeted = false;
+
+  button.onclick = () => {
+    const isOpen = chatbox.style.display === 'flex';
+    chatbox.style.display = isOpen ? 'none' : 'flex';
+
+    if (!isOpen && !hasGreeted) {
+      appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
+      hasGreeted = true;
+    }
+  };
+
+  async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const message = input.value.trim();
+    if (!message) return;
+
+    appendMessage("You", message, "user");
+    input.value = "";
+    typingIndicator.style.display = "block";
+
+    try {
+      const res = await fetch("/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Website Visitor",
+          email: "visitor@nowhere.com",
+          message: message
+        })
+      });
+
+      const data = await res.json();
+      typingIndicator.style.display = "none";
+      appendMessage("Solomon", data.reply, "bot");
+    } catch (err) {
+      typingIndicator.style.display = "none";
+      appendMessage("Solomon", "Sorry, something went wrong.", "bot");
+    }
+  }
+
+  function appendMessage(sender, text, className) {
+    const msg = document.createElement("div");
+    msg.className = "message " + className;
+    msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
