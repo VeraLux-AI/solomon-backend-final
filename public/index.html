@@ -12,56 +12,24 @@
       --solomon-bubble-bot: #f2f2f2;
       --solomon-bg: rgba(255, 255, 255, 0.6);
       --solomon-blur: blur(12px);
-      --solomon-dark-bg: rgba(24, 24, 24, 0.7);
     }
 
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    #solomon-button {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      background-color: var(--solomon-red);
-      border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 30px;
-      cursor: pointer;
-      z-index: 9999;
-      transition: all 0.3s ease;
-    }
-
-    #solomon-button:hover {
-      transform: scale(1.1);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      background: transparent;
     }
 
     #solomon-chat {
-  transform: translateY(100%);
-  opacity: 0;
-  transition: transform 0.4s ease, opacity 0.3s ease;
-      position: fixed;
-      bottom: 90px;
-      right: 20px;
-      width: 390px;
-      height: 580px;
+      width: 100%;
+      height: 100vh;
       background: var(--solomon-bg);
       backdrop-filter: var(--solomon-blur);
-      border-radius: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      display: none;
+      border-radius: 0;
+      display: flex;
       flex-direction: column;
-      overflow: hidden;
-      z-index: 9998;
-      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: none;
+      border: none;
     }
 
     #chat-header {
@@ -69,9 +37,6 @@
       color: white;
       padding: 18px;
       font-size: 17px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
 
     #chat-messages {
@@ -90,6 +55,8 @@
       line-height: 1.5;
       position: relative;
       display: inline-block;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
     .user {
@@ -145,12 +112,8 @@
 </head>
 <body>
 
-<div id="solomon-button">?</div>
-
 <div id="solomon-chat">
-  <div id="chat-header">
-    Chat with Solomon
-  </div>
+  <div id="chat-header">Chat with Solomon</div>
   <div id="chat-messages"></div>
   <div id="typing">Solomon is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
   <div id="chat-input">
@@ -160,34 +123,11 @@
 </div>
 
 <script>
-  const button = document.getElementById('solomon-button');
-  const chatbox = document.getElementById('solomon-chat');
   const messages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing');
 
-  let hasGreeted = false;
-
-  button.onclick = () => {
-    const isOpen = chatbox.style.display === 'flex';
-    
-    if (isOpen) {
-      chatbox.style.transform = 'translateY(100%)';
-      chatbox.style.opacity = '0';
-      setTimeout(() => { chatbox.style.display = 'none'; }, 300);
-    } else {
-      chatbox.style.display = 'flex';
-      setTimeout(() => {
-        chatbox.style.transform = 'translateY(0%)';
-        chatbox.style.opacity = '1';
-      }, 10);
-    }
-
-
-    if (!isOpen && !hasGreeted) {
-      appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
-      hasGreeted = true;
-    }
-  };
+  // Auto-greet
+  appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
 
   async function sendMessage() {
     const input = document.getElementById("userInput");
@@ -203,8 +143,9 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: "Website Visitor",
-          email: "visitor@nowhere.com",
+          name: "",
+          email: "",
+          phone: "",
           message: message
         })
       });
@@ -222,9 +163,10 @@
     const wrapper = document.createElement("div");
     wrapper.className = "message " + className;
     wrapper.innerText = text;
-    wrapper.style.opacity = 0;
     messages.appendChild(wrapper);
-    setTimeout(() => { wrapper.style.opacity = 1; wrapper.style.transition = 'opacity 0.3s ease'; }, 10);
+    setTimeout(() => {
+      wrapper.style.opacity = 1;
+    }, 10);
     messages.scrollTop = messages.scrollHeight;
   }
 </script>
