@@ -45,6 +45,9 @@
     }
 
     #solomon-chat {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.3s ease;
       position: fixed;
       bottom: 90px;
       right: 20px;
@@ -166,7 +169,19 @@
 
   button.onclick = () => {
     const isOpen = chatbox.style.display === 'flex';
-    chatbox.style.display = isOpen ? 'none' : 'flex';
+    
+    if (isOpen) {
+      chatbox.style.transform = 'translateY(100%)';
+      chatbox.style.opacity = '0';
+      setTimeout(() => { chatbox.style.display = 'none'; }, 300);
+    } else {
+      chatbox.style.display = 'flex';
+      setTimeout(() => {
+        chatbox.style.transform = 'translateY(0%)';
+        chatbox.style.opacity = '1';
+      }, 10);
+    }
+
 
     if (!isOpen && !hasGreeted) {
       appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
@@ -207,7 +222,9 @@
     const wrapper = document.createElement("div");
     wrapper.className = "message " + className;
     wrapper.innerText = text;
+    wrapper.style.opacity = 0;
     messages.appendChild(wrapper);
+    setTimeout(() => { wrapper.style.opacity = 1; wrapper.style.transition = 'opacity 0.3s ease'; }, 10);
     messages.scrollTop = messages.scrollHeight;
   }
 </script>
