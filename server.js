@@ -15,16 +15,18 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Email transporter (Nodemailer using Gmail SMTP or similar)
+// Titan Mail SMTP setup
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.titan.email',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.LEAD_EMAIL_USER,
     pass: process.env.LEAD_EMAIL_PASS,
-  },
+  }
 });
 
-// Chat logic with intelligent lead detection
+// Chat and lead capture logic
 app.post('/message', async (req, res) => {
   const { name, email, phone, message } = req.body;
 
@@ -49,7 +51,6 @@ Once contact details are collected, thank them and let them know a team member w
     const reply = chatCompletion?.choices?.[0]?.message?.content || "I'm here to help whenever you're ready.";
     console.log(`Message from ${name || 'Visitor'}: "${message}"`);
 
-    // If full contact info is provided, email the lead
     if (name && email && phone) {
       const mailOptions = {
         from: process.env.LEAD_EMAIL_USER,
