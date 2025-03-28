@@ -3,13 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
+const OpenAI = require('openai');
 require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Titan Mail SMTP setup
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Email configuration
 const transporter = nodemailer.createTransport({
   host: 'smtp.titan.email',
   port: 465,
@@ -20,22 +25,23 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Store contact details temporarily
+// Memory store for simple lead capture (could be expanded to per-session)
+const contactPath = path.join(__dirname, 'lead-contact.json');
+
+// Store contact info (name, email, phone)
 app.post('/store-contact', (req, res) => {
   const { name, email, phone } = req.body;
-  const contactInfo = { name, email, phone };
-  fs.writeFileSync(path.join(__dirname, 'lead-contact.json'), JSON.stringify(contactInfo));
+  fs.writeFileSync(contactPath, JSON.stringify({ name, email, phone }));
   res.sendStatus(200);
 });
 
-// Handle lead form submission (optional fields)
+// Handle optional garage form submission
 app.post('/lead-details', (req, res) => {
   const { size, priority, timeline } = req.body;
 
   let contactInfo = { name: '', email: '', phone: '' };
-  const contactFile = path.join(__dirname, 'lead-contact.json');
-  if (fs.existsSync(contactFile)) {
-    contactInfo = JSON.parse(fs.readFileSync(contactFile));
+  if (fs.existsSync(contactPath)) {
+    contactInfo = JSON.parse(fs.readFileSync(contactPath));
   }
 
   const emailBody = `
@@ -54,26 +60,55 @@ Timeline: ${timeline || 'N/A'}
     from: process.env.LEAD_EMAIL_USER,
     to: 'nick@elevatedgarage.com',
     subject: '📥 New Garage Design Lead',
-    text: emailBody
+    text: emailBody,
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.error("❌ Email failed to send:", error);
-      res.status(500).send("Error sending email");
+      console.error("❌ Email failed:", error);
+      res.status(500).send("Error sending lead");
     } else {
-      console.log("✅ Garage lead email sent:", info.response);
-      res.status(200).send("Lead captured");
+      console.log("✅ Lead email sent:", info.response);
+      res.sendStatus(200);
     }
   });
 });
 
-// Serve chatbot UI
+// Handle chat messages via OpenAI
+app.post('/message', async (req, res) => {
+  const { message } = req.body;
+
+  try {
+    const chatResponse = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: "system",
+          content: `
+You are Solomon, an expert AI assistant for Elevated Garage. Your job is to help homeowners design their dream garages by answering questions, educating them, and capturing interest in services like flooring, cabinets, gym equipment, lighting, and saunas.
+
+NEVER provide specific prices or timelines — always clarify they vary by project scope and product availability. If someone wants to proceed with a consultation, kindly ask for their name, email, and phone number. Respond conversationally and be helpful.
+`.trim()
+        },
+        { role: "user", content: message }
+      ]
+    });
+
+    const reply = chatResponse.choices[0].message.content;
+    res.json({ reply });
+
+  } catch (err) {
+    console.error("OpenAI Error:", err.message);
+    res.status(500).json({ reply: "Sorry, something went wrong." });
+  }
+});
+
+// Serve chat UI
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Solomon backend running on port ${PORT}`);
+  console.log(`✅ Solomon backend running on port ${PORT}`);
 });
