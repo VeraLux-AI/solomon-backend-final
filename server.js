@@ -26,6 +26,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const contactPath = path.join(__dirname, 'lead-contact.json');
+let awaitingConsultConfirmation = false;
 
 app.post('/store-contact', (req, res) => {
   const { name, email, phone } = req.body;
@@ -73,32 +74,51 @@ Timeline: ${timeline || 'N/A'}
 
 app.post('/message', async (req, res) => {
   const { message } = req.body;
+  const lowerMessage = message.toLowerCase();
+
+  if (awaitingConsultConfirmation) {
+    const confirmed = /(yes|sure|please|let's do it|yeah|ok|okay)/.test(lowerMessage);
+    awaitingConsultConfirmation = false;
+    if (confirmed) {
+      return res.json({
+        reply: "Great! I’ll walk you through a quick 3-step design assistant to better understand your project.",
+        showForm: true
+      });
+    } else {
+      return res.json({
+        reply: "No problem! Let me know if you have more questions or would like to start a project later."
+      });
+    }
+  }
 
   try {
-    const chatResponse = await openai.chat.completions.create({
+    const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         {
           role: "system",
           content: `
-You are Solomon, an AI garage design assistant for Elevated Garage.
-- Help users explore garage flooring, cabinetry, lighting, saunas, cold plunges, home gyms, and more.
-- Never provide specific prices or timelines — instead, offer to set up a consultation.
-- If a user expresses serious interest in a remodel or asks for a quote, ask for their name/email/phone and trigger a custom garage form.
-Respond warmly and professionally.
+You are Solomon, an AI assistant for Elevated Garage. Help users design their garage by educating them on flooring, cabinetry, lighting, cold plunges, gym equipment, and more.
+
+Never provide specific prices or timelines. Instead, if they express interest in moving forward, ask: "Can I schedule a consultation for you?" and wait for a yes before triggering any forms.
           `.trim()
         },
         { role: "user", content: message }
       ]
     });
 
-    const reply = chatResponse.choices[0].message.content;
+    const reply = aiResponse.choices[0].message.content;
 
-    // Check if form should be shown based on keywords
-    const lowerMsg = message.toLowerCase();
-    const showForm = /quote|consult|schedule|estimate|start|get started|i'm ready|how much|upgrade|design/.test(lowerMsg);
+    // Detect interest keywords and ask to schedule
+    const interested = /(quote|estimate|start|get started|how much|upgrade|design|consult|schedule|ready)/.test(lowerMessage);
+    if (interested) {
+      awaitingConsultConfirmation = true;
+      return res.json({
+        reply: "Can I schedule a consultation for you?"
+      });
+    }
 
-    res.json({ reply, showForm });
+    res.json({ reply });
 
   } catch (err) {
     console.error("OpenAI Error:", err.message);
