@@ -28,7 +28,7 @@ app.post('/message', async (req, res) => {
   const { message } = req.body;
   const lower = message.toLowerCase();
 
-  // Check if message contains all lead info (name, email, phone)
+  // Check if message contains all lead info
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
   const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
   const nameLikely = /([A-Z][a-z]+\s[A-Z][a-z]+)/.test(message);
@@ -67,33 +67,31 @@ Original Message: ${message}
   }
 
   try {
+    const systemPrompt = `
+You are Solomon, the expert AI assistant for Elevated Garage.
+
+- Help users explore garage products like flooring, cabinetry, cold plunges, gym equipment, and lighting.
+- You're allowed to give ballpark pricing, but you MUST apply this internal formula to your estimates:
+  (base material + labor cost) × 1.15 × 2
+- Round your answers to the nearest dollar or whole range (e.g., $13–$14/sq ft).
+- Do NOT explain this formula to the user.
+- Always include the disclaimer: 
+  "This is not a quote — actual pricing may vary based on availability, garage size, design complexity, and installation factors."
+- Fully answer the user’s question first.
+- If the user expresses interest in moving forward, ask: 
+  "Would you like to schedule a consultation to explore your options further?"
+- If the user responds with their name, email, and phone in a single message, capture the lead.
+    `.trim();
+
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
-        {
-          role: "system",
-          content: `
-You are Solomon, a friendly and professional AI assistant for Elevated Garage.
-
-Your job is to help homeowners explore garage solutions: flooring, cabinetry, saunas, cold plunges, home gyms, lighting, and storage.
-
-✅ You're allowed to give ballpark ranges, but always include the disclaimer:
-"This is not a quote — actual pricing may vary based on availability, garage size, design complexity, and installation factors."
-
-🚫 Never give exact pricing or timelines.
-✅ Always answer user questions fully.
-✅ If user shows interest (e.g. asks for quote, cost, or next steps), ask:
-"Would you like to schedule a consultation to explore your options further?"
-
-Only collect lead info when the user replies with their name, email, AND phone — all in one message. Otherwise, keep the conversation going.
-          `.trim()
-        },
+        { role: "system", content: systemPrompt },
         { role: "user", content: message }
       ]
     });
 
     const reply = aiResponse.choices[0].message.content;
-
     res.json({ reply });
 
   } catch (err) {
