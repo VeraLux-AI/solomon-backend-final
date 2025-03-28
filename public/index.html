@@ -157,16 +157,23 @@
 <script>
   const messages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing');
+  const inputField = document.getElementById("userInput");
 
   appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
 
+  inputField.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
   async function sendMessage() {
-    const input = document.getElementById("userInput");
-    const message = input.value.trim();
+    const message = inputField.value.trim();
     if (!message) return;
 
     appendMessage("You", message, "user");
-    input.value = "";
+    inputField.value = "";
     typingIndicator.style.display = "block";
 
     try {
