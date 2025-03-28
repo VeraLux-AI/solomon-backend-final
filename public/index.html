@@ -5,48 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Solomon Chat</title>
   <style>
+    :root {
+      --solomon-red: #B91B21;
+      --solomon-orange: #EB6000;
+      --solomon-bubble-user: #EB6000;
+      --solomon-bubble-bot: #f2f2f2;
+      --solomon-bg: rgba(255, 255, 255, 0.6);
+      --solomon-blur: blur(12px);
+      --solomon-dark-bg: rgba(24, 24, 24, 0.7);
+    }
+
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    #solomon-chat {
-      width: 100%;
-      height: 100vh;
-      background: #ffffff;
+    #solomon-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background-color: var(--solomon-red);
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 9999;
+      transition: all 0.3s ease;
+    }
+
+    #solomon-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+
+    #solomon-chat {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 390px;
+      height: 580px;
+      background: var(--solomon-bg);
+      backdrop-filter: var(--solomon-blur);
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      display: none;
       flex-direction: column;
-      border-radius: 0;
-      box-shadow: none;
+      overflow: hidden;
+      z-index: 9998;
+      border: 1px solid rgba(255,255,255,0.3);
     }
 
     #chat-header {
-      background-color: #B91B21;
+      background-color: var(--solomon-red);
       color: white;
-      padding: 16px;
-      font-size: 16px;
+      padding: 18px;
+      font-size: 17px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     #chat-messages {
       flex: 1;
-      padding: 16px;
+      padding: 18px;
       overflow-y: auto;
       font-size: 14px;
-      background: #f9f9f9;
+      background: transparent;
     }
 
     .message {
-      margin-bottom: 12px;
-      line-height: 1.4;
+      max-width: 80%;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      line-height: 1.5;
+      position: relative;
+      display: inline-block;
     }
 
     .user {
-      font-weight: bold;
-      color: #EB6000;
+      background: var(--solomon-bubble-user);
+      color: white;
+      align-self: flex-end;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
     }
 
     .bot {
-      color: #333;
+      background: var(--solomon-bubble-bot);
+      color: #222;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
     }
 
     #typing {
@@ -54,13 +109,15 @@
       color: #aaa;
       display: none;
       padding-left: 8px;
+      font-size: 13px;
     }
 
     #chat-input {
       display: flex;
-      padding: 12px;
-      border-top: 1px solid #eee;
-      background: white;
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(8px);
     }
 
     #chat-input input {
@@ -68,27 +125,31 @@
       padding: 10px;
       font-size: 14px;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
       outline: none;
     }
 
     #chat-input button {
-      background: #EB6000;
+      background: var(--solomon-orange);
       color: white;
       border: none;
       padding: 10px 14px;
-      margin-left: 8px;
-      border-radius: 6px;
+      margin-left: 10px;
+      border-radius: 8px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
 
+<div id="solomon-button">?</div>
+
 <div id="solomon-chat">
-  <div id="chat-header">Chat with Solomon</div>
+  <div id="chat-header">
+    Chat with Solomon
+  </div>
   <div id="chat-messages"></div>
-  <div id="typing">Solomon is typing...</div>
+  <div id="typing">Solomon is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
   <div id="chat-input">
     <input type="text" id="userInput" placeholder="Type your message..." />
     <button onclick="sendMessage()">Send</button>
@@ -96,11 +157,22 @@
 </div>
 
 <script>
+  const button = document.getElementById('solomon-button');
+  const chatbox = document.getElementById('solomon-chat');
   const messages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing');
 
-  // Auto-greet on load
-  appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
+  let hasGreeted = false;
+
+  button.onclick = () => {
+    const isOpen = chatbox.style.display === 'flex';
+    chatbox.style.display = isOpen ? 'none' : 'flex';
+
+    if (!isOpen && !hasGreeted) {
+      appendMessage("Solomon", "Welcome to Elevated Garage! My name is Solomon. How can I help you today?", "bot");
+      hasGreeted = true;
+    }
+  };
 
   async function sendMessage() {
     const input = document.getElementById("userInput");
@@ -132,10 +204,10 @@
   }
 
   function appendMessage(sender, text, className) {
-    const msg = document.createElement("div");
-    msg.className = "message " + className;
-    msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-    messages.appendChild(msg);
+    const wrapper = document.createElement("div");
+    wrapper.className = "message " + className;
+    wrapper.innerText = text;
+    messages.appendChild(wrapper);
     messages.scrollTop = messages.scrollHeight;
   }
 </script>
