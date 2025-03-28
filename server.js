@@ -14,7 +14,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Email configuration
 const transporter = nodemailer.createTransport({
   host: 'smtp.titan.email',
   port: 465,
@@ -25,70 +24,69 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const contactPath = path.join(__dirname, 'lead-contact.json');
 let awaitingConsultConfirmation = false;
-
-app.post('/store-contact', (req, res) => {
-  const { name, email, phone } = req.body;
-  fs.writeFileSync(contactPath, JSON.stringify({ name, email, phone }));
-  res.sendStatus(200);
-});
-
-app.post('/lead-details', (req, res) => {
-  const { size, priority, timeline } = req.body;
-
-  let contactInfo = { name: '', email: '', phone: '' };
-  if (fs.existsSync(contactPath)) {
-    contactInfo = JSON.parse(fs.readFileSync(contactPath));
-  }
-
-  const emailBody = `
-📥 New Garage Design Lead
-
-Name: ${contactInfo.name || 'N/A'}
-Email: ${contactInfo.email || 'N/A'}
-Phone: ${contactInfo.phone || 'N/A'}
-
-Garage Size: ${size || 'N/A'}
-Top Priority: ${priority || 'N/A'}
-Timeline: ${timeline || 'N/A'}
-  `.trim();
-
-  const mailOptions = {
-    from: process.env.LEAD_EMAIL_USER,
-    to: 'nick@elevatedgarage.com',
-    subject: '📥 New Garage Design Lead',
-    text: emailBody,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("❌ Email failed:", error);
-      res.status(500).send("Error sending lead");
-    } else {
-      console.log("✅ Garage lead email sent:", info.response);
-      res.sendStatus(200);
-    }
-  });
-});
+let awaitingContactDetails = false;
 
 app.post('/message', async (req, res) => {
   const { message } = req.body;
-  const lowerMessage = message.toLowerCase();
+  const lower = message.toLowerCase();
 
   if (awaitingConsultConfirmation) {
-    const confirmed = /(yes|sure|please|let's do it|yeah|ok|okay)/.test(lowerMessage);
+    const confirmed = /(yes|sure|please|okay|ok|yeah|let's do it)/.test(lower);
     awaitingConsultConfirmation = false;
+
     if (confirmed) {
+      awaitingContactDetails = true;
       return res.json({
-        reply: "Great! I’ll walk you through a quick 3-step design assistant to better understand your project.",
-        showForm: true
+        reply: "Awesome! Could you please share your name, email, and phone number so we can schedule the consultation?"
       });
     } else {
       return res.json({
-        reply: "No problem! Let me know if you have more questions or would like to start a project later."
+        reply: "No problem at all! Let me know if you’d like help with anything else."
       });
     }
+  }
+
+  if (awaitingContactDetails) {
+    awaitingContactDetails = false;
+
+    const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
+    const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+    const nameMatch = message
+      .replace(emailMatch?.[0] || "", "")
+      .replace(phoneMatch?.[0] || "", "")
+      .replace(/[,\s]+/g, " ")
+      .trim();
+
+    const name = nameMatch || "N/A";
+    const email = emailMatch?.[0] || "N/A";
+    const phone = phoneMatch?.[0] || "N/A";
+
+    const mailOptions = {
+      from: process.env.LEAD_EMAIL_USER,
+      to: 'nick@elevatedgarage.com',
+      subject: '📥 New Consultation Request',
+      text: `
+New Lead Captured:
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Original Message: ${message}
+      `.trim()
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("❌ Email failed to send:", error);
+      } else {
+        console.log("✅ Contact info sent via email:", info.response);
+      }
+    });
+
+    return res.json({
+      reply: "Thanks, I've submitted your information to our team! We'll reach out shortly to schedule your consultation."
+    });
   }
 
   try {
@@ -98,9 +96,13 @@ app.post('/message', async (req, res) => {
         {
           role: "system",
           content: `
-You are Solomon, an AI assistant for Elevated Garage. Help users design their garage by educating them on flooring, cabinetry, lighting, cold plunges, gym equipment, and more.
+You are Solomon, a friendly garage design assistant for Elevated Garage.
+Help users explore garage solutions like flooring, cabinetry, lighting, gym equipment, cold plunges, and saunas.
 
-Never provide specific prices or timelines. Instead, if they express interest in moving forward, ask: "Can I schedule a consultation for you?" and wait for a yes before triggering any forms.
+Never provide exact pricing or timelines — let them know these vary based on scope and availability.
+
+If someone wants a quote or consultation, ask: "Can I schedule a consultation for you?"
+If they say yes, ask for their name, email, and phone.
           `.trim()
         },
         { role: "user", content: message }
@@ -108,9 +110,8 @@ Never provide specific prices or timelines. Instead, if they express interest in
     });
 
     const reply = aiResponse.choices[0].message.content;
+    const interested = /(quote|estimate|start|get started|how much|upgrade|design|consult|schedule|ready)/.test(lower);
 
-    // Detect interest keywords and ask to schedule
-    const interested = /(quote|estimate|start|get started|how much|upgrade|design|consult|schedule|ready)/.test(lowerMessage);
     if (interested) {
       awaitingConsultConfirmation = true;
       return res.json({
