@@ -26,7 +26,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Parse contact details from a string message
+// Memory store for conversation history
+const conversationMemory = {};
+
 function extractLeadDetails(message) {
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
   const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
@@ -43,12 +45,42 @@ function extractLeadDetails(message) {
   };
 }
 
-// Chat and lead capture logic
-app.post('/message', async (req, res) => {
-  const { message } = req.body;
-
+async function summarizeContext(messages) {
   try {
     const chatCompletion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: "system",
+          content: `
+You're an assistant summarizing customer interest from a garage design conversation. Your goal is to detect if the customer mentioned any of these: flooring, cabinetry, lighting, saunas, cold plunges, gym equipment, walk-in coolers.
+
+Provide a concise summary of what they expressed interest in or asked about.
+Example: "User discussed flooring options including epoxy and tile, and showed interest in gym equipment."
+`
+        },
+        { role: "user", content: messages.join("\n") }
+      ]
+    });
+
+    return chatCompletion.choices[0].message.content;
+  } catch (err) {
+    console.error("❌ Failed to summarize context:", err.message);
+    return "No additional context extracted.";
+  }
+}
+
+app.post('/message', async (req, res) => {
+  const { message, sessionId = "default" } = req.body;
+
+  if (!conversationMemory[sessionId]) {
+    conversationMemory[sessionId] = [];
+  }
+
+  conversationMemory[sessionId].push(`User: ${message}`);
+
+  try {
+    const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         {
@@ -61,11 +93,12 @@ If the user expresses interest in scheduling, a consultation, or getting started
 Once contact details are collected, thank them and let them know a team member will follow up.
 `.trim()
         },
-        { role: "user", content: message },
+        { role: "user", content: message }
       ],
     });
 
-    const reply = chatCompletion?.choices?.[0]?.message?.content || "I'm here to help whenever you're ready.";
+    const reply = aiResponse?.choices?.[0]?.message?.content || "I'm here to help whenever you're ready.";
+    conversationMemory[sessionId].push(`Solomon: ${reply}`);
     console.log(`Message from Visitor: "${message}"`);
 
     const { name, email, phone } = extractLeadDetails(message);
@@ -75,6 +108,8 @@ Once contact details are collected, thank them and let them know a team member w
     console.log("   Phone:", phone);
 
     if (name && email && phone) {
+      const contextSummary = await summarizeContext(conversationMemory[sessionId]);
+
       const mailOptions = {
         from: process.env.LEAD_EMAIL_USER,
         to: 'nick@elevatedgarage.com',
@@ -86,6 +121,8 @@ Name: ${name}
 Email: ${email}
 Phone: ${phone}
 Message: ${message}
+
+Context: ${contextSummary}
         `.trim()
       };
 
@@ -97,23 +134,19 @@ Message: ${message}
           console.log("✅ Lead email sent successfully:", info.response);
         }
       });
+
+      // Reset memory for this session
+      conversationMemory[sessionId] = [];
     }
 
     res.json({ reply });
 
   } catch (error) {
-    console.error("OpenAI Error:");
-    if (error.response) {
-      console.error("Status:", error.response.status);
-      console.error("Data:", JSON.stringify(error.response.data, null, 2));
-    } else {
-      console.error("Message:", error.message);
-    }
+    console.error("OpenAI Error:", error.message);
     res.status(500).json({ error: "Error contacting OpenAI" });
   }
 });
 
-// Serve frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
