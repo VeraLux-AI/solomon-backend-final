@@ -4,6 +4,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const OpenAI = require('openai');
+const { google } = require('googleapis');
 require('dotenv').config();
 
 const app = express();
@@ -26,9 +27,7 @@ const transporter = nodemailer.createTransport({
 
 app.post('/message', async (req, res) => {
   const { message } = req.body;
-  const lower = message.toLowerCase();
 
-  // Check if message contains all lead info
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
   const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
   const nameLikely = /([A-Z][a-z]+\s[A-Z][a-z]+)/.test(message);
@@ -67,7 +66,7 @@ Original Message: ${message}
   }
 
   try {
-    const systemPrompt = `
+    const systemPrompt = \`
 You are Solomon, the professional AI assistant for Elevated Garage.
 
 ✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.
@@ -83,7 +82,7 @@ You are Solomon, the professional AI assistant for Elevated Garage.
 "Would you like to schedule a consultation to explore your options further?"
 
 Only collect contact info if the user replies with name, email, and phone in one message.
-    `.trim();
+    \`.trim();
 
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -99,6 +98,36 @@ Only collect contact info if the user replies with name, email, and phone in one
   } catch (err) {
     console.error("OpenAI Error:", err.message);
     res.status(500).json({ reply: "Sorry, something went wrong." });
+  }
+});
+
+// 🧠 Google OAuth Setup for Google Drive Uploads
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+app.get('/auth', (req, res) => {
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  res.redirect(authUrl);
+});
+
+app.get('/api/oauth2callback', async (req, res) => {
+  const code = req.query.code;
+
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    fs.writeFileSync('token.json', JSON.stringify(tokens, null, 2));
+    res.send("✅ Authorization successful! You may close this window.");
+  } catch (err) {
+    console.error('❌ Error retrieving access token:', err.message);
+    res.status(500).send('Failed to authorize. Please try again.');
   }
 });
 
