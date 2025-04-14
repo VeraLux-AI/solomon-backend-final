@@ -5,25 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Contact Solomon - Elevated Garage</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
+    html, body {
       margin: 0;
       padding: 0;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      width: 100vw;
       height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
     }
 
     .solomon-container {
-      width: 100%;
-      max-width: 600px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
       padding: 2rem;
       box-sizing: border-box;
+      background-color: #fff;
     }
 
     .solomon-header {
@@ -33,24 +33,25 @@
 
     .solomon-header h1 {
       margin: 0;
-      font-size: 1.8rem;
+      font-size: 2rem;
       color: #B91B21;
     }
 
     .solomon-header p {
       color: #666;
-      font-size: 0.95rem;
+      font-size: 1rem;
     }
 
     .chat-box {
+      flex-grow: 1;
       width: 100%;
-      height: 400px;
+      max-width: 800px;
       border: 1px solid #ddd;
       border-radius: 8px;
       padding: 1rem;
       overflow-y: auto;
-      margin-bottom: 1rem;
       background-color: #fefefe;
+      margin-bottom: 1rem;
     }
 
     .message {
@@ -70,6 +71,8 @@
     form {
       display: flex;
       gap: 0.5rem;
+      width: 100%;
+      max-width: 800px;
     }
 
     input[type="text"] {
