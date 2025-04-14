@@ -66,7 +66,7 @@ Original Message: ${message}
   }
 
   try {
-    const systemPrompt = \`
+    const systemPrompt = `
 You are Solomon, the professional AI assistant for Elevated Garage.
 
 ✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.
@@ -82,7 +82,7 @@ You are Solomon, the professional AI assistant for Elevated Garage.
 "Would you like to schedule a consultation to explore your options further?"
 
 Only collect contact info if the user replies with name, email, and phone in one message.
-    \`.trim();
+`.trim();
 
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
