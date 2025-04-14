@@ -1,4 +1,5 @@
 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -70,13 +71,14 @@
 
     form {
       display: flex;
+      flex-direction: column;
       gap: 0.5rem;
       width: 100%;
       max-width: 800px;
     }
 
-    input[type="text"] {
-      flex-grow: 1;
+    input[type="text"],
+    input[type="file"] {
       padding: 0.6rem;
       font-size: 1rem;
       border: 1px solid #ccc;
@@ -107,8 +109,9 @@
     <div class="chat-box" id="chat-box">
       <div class="message bot">👋 Hi there! I'm Solomon, the Elevated Garage assistant. What’s your name?</div>
     </div>
-    <form id="chat-form">
+    <form id="chat-form" enctype="multipart/form-data">
       <input type="text" id="user-input" placeholder="Type your answer..." required />
+      <input type="file" id="file-input" accept="image/*,.pdf,.doc,.docx" />
       <button type="submit">Send</button>
     </form>
   </div>
@@ -132,10 +135,16 @@
       addMessage(message, "user");
       input.value = "";
 
-      const res = await fetch("/message", {
+      const file = document.getElementById("file-input").files[0];
+      const formData = new FormData();
+      formData.append("message", message);
+      if (file) {
+        formData.append("file", file);
+      }
+
+      const res = await fetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
+        body: formData
       });
 
       const data = await res.json();
