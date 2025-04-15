@@ -189,8 +189,19 @@
         body: formData
       });
 
+      // Add typing indicator
+      const typingIndicator = document.createElement("div");
+      typingIndicator.classList.add("message", "bot");
+      typingIndicator.setAttribute("data-text", "Solomon is typing...");
+      chatBox.appendChild(typingIndicator);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
       const data = await res.json();
-      addMessage(data.reply, "bot");
+
+      setTimeout(() => {
+        typingIndicator.remove(); // Remove indicator
+        addMessage(data.reply, "bot");
+      }, 500); // Optional delay for realism
     });
   
     input.addEventListener("keydown", function(e) {
