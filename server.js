@@ -43,14 +43,13 @@ app.post('/message', async (req, res) => {
       from: process.env.LEAD_EMAIL_USER,
       to: 'nick@elevatedgarage.com',
       subject: '📥 New Consultation Request',
-      text: `
-New Lead Captured:
-
-Name: ${name}
-Email: ${email}
-Phone: ${phone}
-Original Message: ${message}
-      `.trim()
+      text: (
+        "New Lead Captured:\n\n" +
+        "Name: " + name + "\n" +
+        "Email: " + email + "\n" +
+        "Phone: " + phone + "\n" +
+        "Original Message: " + message
+      )
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -67,23 +66,16 @@ Original Message: ${message}
   }
 
   try {
-    const systemPrompt = `
-You are Solomon, the professional AI assistant for Elevated Garage.
-
-✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.
-✅ Only provide **average material costs** when discussing pricing.
-✅ Clearly state: "This is for material cost only."
-✅ Include this disclaimer: 
-"This is not a quote — material prices may vary depending on brand, availability, and local suppliers."
-
-🚫 Never include labor, install, or total pricing.
-🚫 Never apply markup.
-
-✅ If a user shows interest in starting a project, ask:
-"Would you like to schedule a consultation to explore your options further?"
-
-Only collect contact info if the user replies with name, email, and phone in one message.
-    \`.trim();
+    const systemPrompt = "You are Solomon, the professional AI assistant for Elevated Garage.\n\n" +
+    "✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.\n" +
+    "✅ Only provide **average material costs** when discussing pricing.\n" +
+    "✅ Clearly state: \"This is for material cost only.\"\n" +
+    "✅ Include this disclaimer: \"This is not a quote — material prices may vary depending on brand, availability, and local suppliers.\"\n\n" +
+    "🚫 Never include labor, install, or total pricing.\n" +
+    "🚫 Never apply markup.\n\n" +
+    "✅ If a user shows interest in starting a project, ask:\n" +
+    "\"Would you like to schedule a consultation to explore your options further?\"\n\n" +
+    "Only collect contact info if the user replies with name, email, and phone in one message.";
 
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -102,7 +94,6 @@ Only collect contact info if the user replies with name, email, and phone in one
   }
 });
 
-// 🧠 Google OAuth Setup for Google Drive Uploads
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -124,7 +115,6 @@ app.get('/api/oauth2callback', async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-
     fs.writeFileSync('token.json', JSON.stringify(tokens, null, 2));
     res.send("✅ Authorization successful! You may close this window.");
   } catch (err) {
@@ -138,7 +128,5 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`✅ Solomon backend running on port ${PORT}`);
-});
-
+console.log("✅ Solomon backend running on port " + PORT);
+app.listen(PORT);
