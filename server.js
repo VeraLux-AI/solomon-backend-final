@@ -1,4 +1,3 @@
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -29,15 +28,16 @@ const transporter = nodemailer.createTransport({
 });
 
 app.post('/message', async (req, res) => {
-  const { message } = req.body;
+  const { message, source } = req.body;
 
   console.log("📨 Received message:", message);
+  if (source) console.log("📍 Source:", source);
 
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
   const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
   const nameLikely = /([A-Z][a-z]+\s[A-Z][a-z]+)/.test(message);
 
-  if (emailMatch && phoneMatch && nameLikely) {
+  if (source === "contact" && emailMatch && phoneMatch && nameLikely) {
     const nameMatch = message.match(/([A-Z][a-z]+\s[A-Z][a-z]+)/);
     const name = nameMatch ? nameMatch[0] : "N/A";
     const email = emailMatch[0];
