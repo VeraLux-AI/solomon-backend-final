@@ -171,7 +171,6 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     };
 
-    
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const message = input.value;
@@ -193,14 +192,14 @@
       const data = await res.json();
       addMessage(data.reply, "bot");
     });
-  </script>
-</body>
-</html>
-
-
+  
     input.addEventListener("keydown", function(e) {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         form.requestSubmit();
       }
     });
+    
+  </script>
+</body>
+</html>
