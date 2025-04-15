@@ -142,7 +142,29 @@
     button:hover {
       background-color: #a2181b;
     }
-  </style>
+  
+    .message {
+      display: flex;
+      margin-bottom: 0.75rem;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.4s ease-out forwards;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .image-preview {
+      max-width: 200px;
+      margin-top: 0.5rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    </style>
 </head>
 <body>
 <div class="solomon-container">
@@ -183,6 +205,15 @@
       formData.append("message", message);
       if (file) {
         formData.append("file", file);
+
+      // Show preview if image
+      if (file && file.type.startsWith("image/")) {
+        const imgPreview = document.createElement("img");
+        imgPreview.classList.add("image-preview");
+        imgPreview.src = URL.createObjectURL(file);
+        chatBox.appendChild(imgPreview);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
       }
 
       const res = await fetch("/api/contact", {
@@ -200,6 +231,10 @@
         form.requestSubmit();
       }
     });
+    
+  </script>
+</body>
+</html>
     
   </script>
 </body>
