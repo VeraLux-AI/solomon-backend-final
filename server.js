@@ -26,6 +26,9 @@ const transporter = nodemailer.createTransport({
 });
 
 app.post('/message', async (req, res) => {
+  ...
+  res.json({ reply: ... });
+});
   const { message } = req.body;
 
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
