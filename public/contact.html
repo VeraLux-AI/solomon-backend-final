@@ -184,7 +184,7 @@
         formData.append("file", file);
       }
 
-      const res = await fetch("/api/contact", {
+      const res = await fetch("/message", {
         method: "POST",
         body: formData
       });
