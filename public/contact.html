@@ -189,19 +189,24 @@
         body: formData
       });
 
-      // Add typing indicator
+      // Add typing indicator only while waiting for a real response
       const typingIndicator = document.createElement("div");
       typingIndicator.classList.add("message", "bot");
       typingIndicator.setAttribute("data-text", "Solomon is typing...");
       chatBox.appendChild(typingIndicator);
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      const data = await res.json();
-
-      setTimeout(() => {
-        typingIndicator.remove(); // Remove indicator
-        addMessage(data.reply, "bot");
-      }, 500); // Optional delay for realism
+      try {
+        const data = await res.json();
+        setTimeout(() => {
+          typingIndicator.remove();
+          addMessage(data.reply, "bot");
+        }, 500);
+      } catch (error) {
+        console.error("Failed to get response from Solomon:", error);
+        typingIndicator.remove();
+        addMessage("Sorry, something went wrong. Please try again.", "bot");
+      }
     });
   
     input.addEventListener("keydown", function(e) {
