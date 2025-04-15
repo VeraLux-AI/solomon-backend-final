@@ -31,6 +31,8 @@ const transporter = nodemailer.createTransport({
 app.post('/message', async (req, res) => {
   const { message } = req.body;
 
+  console.log("📨 Received message:", message);
+
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
   const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
   const nameLikely = /([A-Z][a-z]+\s[A-Z][a-z]+)/.test(message);
@@ -68,6 +70,8 @@ app.post('/message', async (req, res) => {
   }
 
   try {
+    console.log("🧠 Sending to OpenAI:", message);
+
     const systemPrompt = "You are Solomon, the professional AI assistant for Elevated Garage.\n\n" +
     "✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.\n" +
     "✅ Only provide **average material costs** when discussing pricing.\n" +
@@ -87,12 +91,16 @@ app.post('/message', async (req, res) => {
       ]
     });
 
-    const reply = aiResponse.choices[0].message.content;
+    const reply = aiResponse.choices?.[0]?.message?.content || 
+                  "✅ Solomon received your message but didn’t return a clear reply. Please try rephrasing.";
+
     res.json({ reply });
 
   } catch (err) {
-    console.error("OpenAI Error:", err.message);
-    res.status(500).json({ reply: "Sorry, something went wrong." });
+    console.error("❌ OpenAI Error:", err.message);
+    res.status(500).json({
+      reply: "⚠️ Sorry, Solomon had trouble processing your request. Please try again shortly."
+    });
   }
 });
 
