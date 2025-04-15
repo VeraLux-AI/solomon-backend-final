@@ -1,4 +1,3 @@
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -6,11 +5,9 @@ const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const OpenAI = require('openai');
 const { google } = require('googleapis');
-const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -31,8 +28,6 @@ const transporter = nodemailer.createTransport({
 app.post('/message', async (req, res) => {
   const { message } = req.body;
 
-  console.log("📨 Received message:", message);
-
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
   const phoneMatch = message.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
   const nameLikely = /([A-Z][a-z]+\s[A-Z][a-z]+)/.test(message);
@@ -47,13 +42,14 @@ app.post('/message', async (req, res) => {
       from: process.env.LEAD_EMAIL_USER,
       to: 'nick@elevatedgarage.com',
       subject: '📥 New Consultation Request',
-      text: (
-        "New Lead Captured:\n\n" +
-        "Name: " + name + "\n" +
-        "Email: " + email + "\n" +
-        "Phone: " + phone + "\n" +
-        "Original Message: " + message
-      )
+      text: `
+New Lead Captured:
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Original Message: ${message}
+      `.trim()
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -70,18 +66,23 @@ app.post('/message', async (req, res) => {
   }
 
   try {
-    console.log("🧠 Sending to OpenAI:", message);
+    const systemPrompt = `
+You are Solomon, the professional AI assistant for Elevated Garage.
 
-    const systemPrompt = "You are Solomon, the professional AI assistant for Elevated Garage.\n\n" +
-    "✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.\n" +
-    "✅ Only provide **average material costs** when discussing pricing.\n" +
-    "✅ Clearly state: \"This is for material cost only.\"\n" +
-    "✅ Include this disclaimer: \"This is not a quote — material prices may vary depending on brand, availability, and local suppliers.\"\n\n" +
-    "🚫 Never include labor, install, or total pricing.\n" +
-    "🚫 Never apply markup.\n\n" +
-    "✅ If a user shows interest in starting a project, ask:\n" +
-    "\"Would you like to schedule a consultation to explore your options further?\"\n\n" +
-    "Only collect contact info if the user replies with name, email, and phone in one message.";
+✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.
+✅ Only provide **average material costs** when discussing pricing.
+✅ Clearly state: "This is for material cost only."
+✅ Include this disclaimer: 
+"This is not a quote — material prices may vary depending on brand, availability, and local suppliers."
+
+🚫 Never include labor, install, or total pricing.
+🚫 Never apply markup.
+
+✅ If a user shows interest in starting a project, ask:
+"Would you like to schedule a consultation to explore your options further?"
+
+Only collect contact info if the user replies with name, email, and phone in one message.
+`.trim();
 
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -91,19 +92,16 @@ app.post('/message', async (req, res) => {
       ]
     });
 
-    const reply = aiResponse.choices?.[0]?.message?.content || 
-                  "✅ Solomon received your message but didn’t return a clear reply. Please try rephrasing.";
-
+    const reply = aiResponse.choices[0].message.content;
     res.json({ reply });
 
   } catch (err) {
-    console.error("❌ OpenAI Error:", err.message);
-    res.status(500).json({
-      reply: "⚠️ Sorry, Solomon had trouble processing your request. Please try again shortly."
-    });
+    console.error("OpenAI Error:", err.message);
+    res.status(500).json({ reply: "Sorry, something went wrong." });
   }
 });
 
+// 🧠 Google OAuth Setup for Google Drive Uploads
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -125,6 +123,7 @@ app.get('/api/oauth2callback', async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
+
     fs.writeFileSync('token.json', JSON.stringify(tokens, null, 2));
     res.send("✅ Authorization successful! You may close this window.");
   } catch (err) {
@@ -138,5 +137,6 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-console.log("✅ Solomon backend running on port " + PORT);
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`✅ Solomon backend running on port ${PORT}`);
+});
