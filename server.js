@@ -1,3 +1,4 @@
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -26,9 +27,6 @@ const transporter = nodemailer.createTransport({
 });
 
 app.post('/message', async (req, res) => {
-  ...
-  res.json({ reply: ... });
-});
   const { message } = req.body;
 
   const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[A-Za-z]{2,}/);
@@ -69,7 +67,7 @@ Original Message: ${message}
   }
 
   try {
-    const systemPrompt = `
+    const systemPrompt = \`
 You are Solomon, the professional AI assistant for Elevated Garage.
 
 ✅ Answer garage-related questions about materials like flooring, cabinetry, lighting, and more.
@@ -85,7 +83,7 @@ You are Solomon, the professional AI assistant for Elevated Garage.
 "Would you like to schedule a consultation to explore your options further?"
 
 Only collect contact info if the user replies with name, email, and phone in one message.
-`.trim();
+    \`.trim();
 
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4',
@@ -143,3 +141,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Solomon backend running on port ${PORT}`);
 });
+
