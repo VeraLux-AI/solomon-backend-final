@@ -85,7 +85,7 @@ app.post('/message', async (req, res) => {
     "Only collect contact info if the user replies with name, email, and phone in one message.";
 
     const aiResponse = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message }
